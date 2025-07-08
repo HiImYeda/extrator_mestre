@@ -19,7 +19,7 @@ from typing import List, Union, Literal, Optional
 class ImageData(BaseModel):
     """Define a estrutura para retornar dados de imagem."""
     original_mime_type: str
-    image_base64_jpeg: str
+    image_base64_png: str
 
 class TextBlock(BaseModel):
     """Define um bloco de conteúdo de texto."""
@@ -57,6 +57,7 @@ def process_base64_file(base64_string: str) -> dict:
     """
     Decodifica uma string base64, identifica o tipo de arquivo e retorna
     uma lista unificada de blocos de conteúdo (texto e/ou imagem).
+    Usa o mesmo padrão de conversão de PDF para imagem do PDFSplitter (DPI=200, formato PNG).
     """
     try:
         decoded_bytes = base64.b64decode(base64_string)
@@ -76,12 +77,13 @@ def process_base64_file(base64_string: str) -> dict:
                         if page_text and page_text.strip():
                             content_blocks.append(TextBlock(source_page=page.page_number, content=page_text.strip()))
                         else:
-                            # Se não houver texto, converte a página em imagem
-                            page_image = convert_from_bytes(decoded_bytes, fmt='jpeg', first_page=page.page_number, last_page=page.page_number)[0]
+                            # Se não houver texto, converte a página em imagem PNG seguindo o padrão do PDFSplitter
+                            page_image = convert_from_bytes(decoded_bytes, dpi=200, fmt='PNG', first_page=page.page_number, last_page=page.page_number)[0]
                             buffered = io.BytesIO()
-                            page_image.save(buffered, format="JPEG")
+                            page_image.save(buffered, format='PNG')
+                            buffered.seek(0)
                             img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-                            image_content = ImageData(original_mime_type=mime_type, image_base64_jpeg=img_str)
+                            image_content = ImageData(original_mime_type=mime_type, image_base64_png=img_str)
                             content_blocks.append(ImageBlock(source_page=page.page_number, content=image_content))
                 
                 return {"status": "success", "content_type": "documento_unificado", "data": content_blocks, "message": f"PDF processado. Total de {len(content_blocks)} páginas."}
@@ -92,13 +94,13 @@ def process_base64_file(base64_string: str) -> dict:
         # --- Image Processing ---
         elif mime_type.startswith('image/'):
             img = Image.open(file_stream)
-            # Converte modos de cor como RGBA (de PNGs) ou P (de GIFs) para RGB, que é compatível com JPEG
-            if img.mode in ('RGBA', 'P'):
-                img = img.convert('RGB')
+            # Processa a imagem seguindo o padrão do PDFSplitter
             buffered = io.BytesIO()
-            img.save(buffered, format="JPEG")
-            jpeg_base64_string = base64.b64encode(buffered.getvalue()).decode('utf-8')
-            image_data = ImageData(original_mime_type=mime_type, image_base64_jpeg=jpeg_base64_string)
+            # Salva como PNG usando o mesmo formato do PDFSplitter
+            img.save(buffered, format='PNG')
+            buffered.seek(0)
+            png_base64_string = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            image_data = ImageData(original_mime_type=mime_type, image_base64_png=png_base64_string)
             content_blocks.append(ImageBlock(content=image_data))
             return {"status": "success", "content_type": "documento_unificado", "data": content_blocks, "message": f"Arquivo de imagem ({mime_type}) processado."}
 
