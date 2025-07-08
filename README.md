@@ -1,4 +1,4 @@
-# Extrator Mestreabc
+# Extrator Mestre
 
 API para extração de conteúdo de diferentes tipos de arquivos (PDF, DOCX, XLSX e imagens).
 
