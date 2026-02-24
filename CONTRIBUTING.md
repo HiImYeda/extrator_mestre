@@ -30,7 +30,7 @@ Para rodar o projeto localmente sem Docker, siga os passos abaixo:
 
 3. Ative o ambiente virtual:
    - **Linux/macOS:** `source venv/bin/activate`
-   - **Windows:** `venv\Scripts\activate`
+   - **Windows:** `venvScriptsactivate`
 
 4. Instale as dependências:
    ```bash
@@ -78,3 +78,5 @@ Para manter a consistência, por favor siga estas diretrizes:
 
 ---
 Se tiver dúvidas, sinta-se à vontade para abrir uma Issue!
+
+Editado pelo Geston AI
